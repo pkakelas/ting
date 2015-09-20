@@ -11,6 +11,32 @@ from .utils import datetime_to_timestamp, timestamp_to_datetime
 
 from .models import Message, Channel
 
+def login_user(username, password=None):
+    """
+    Logs in a user
+    """
+    parameters={'username': username}
+
+    if password != None:
+        parameters['password']=password
+
+    return Client().post(
+        reverse('chat:session'),
+        parameters
+    )
+
+def create_persistent_user(username, password):
+    """
+    Creates a persistent user by adding
+    a password.
+    """
+    login_user(username=username)
+
+    return Client().patch(
+        reverse('chat:user', args=(username,)),
+        {'password': password}
+    )
+
 
 def create_message(text, timestamp, username, channel):
     """
@@ -397,6 +423,137 @@ class MessageViewGETTests(ChatTests):
         )
 
         self.assertEqual(response.status_code, 404)
+
+class UserViewPATCHTests(ChatTests):
+    def patch_and_get_response(self, username, email=None, password=None, birthday=None, gender=None):
+        """
+        Patches a message on chat:user and returns the response
+        """
+        parameters={}
+
+        if email != None:
+            parameters['email']=email
+        if password != None:
+            parameters['password']=password
+#        if birthday != None:
+#            parameters['birthday']=birthday
+#        if gender != None:
+#            parameters['gender']=gender
+
+        qstring = urllib.urlencode(parameters);
+
+        return self.client.patch(
+            reverse('chat:user', args=(username,)),
+            qstring
+        )
+
+    def test_add_password(self):
+        """
+        The view should change password according to the
+        data provided if username exists and
+        respond with a 200(OK) status code.
+        """
+        login_user(username='Corleone')
+        response = self.patch_and_get_response(username=Corleone, password='<3 stracci')
+        self.assertEqual(response.status_code, 200)
+
+        response = login_user(username='Corleone')
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.reason_phrase, 'password_required')
+
+        response = login_user(username='Corleone', password='<3 stracci')
+        self.assertEqual(response.status_code, 200)
+
+    def test_add_email(self):
+        """
+        The view should change email according to the
+        data provided if username exists and
+        respond with a 200(OK) status code.
+        """
+        response = login_user(username='Corleone')
+        self.patch_and_get_response(username=Corleone, email='corlfamiglia@godfather.com')
+        self.assertEqual(response.status_code, 200)
+
+    def test_wrong_username(self):
+        """
+        The view should return 403(Unauthorized) in case
+        the user isn't logged in.
+        """
+        response = self.patch_and_get_response(username=Corleone, email='corlfamiglia@godfather.com')
+        self.assertEqual(response.status_code, 403)
+
+class SessionViewPATCHTests(ChatTests):
+    def test_create_session(self):
+        """
+        The view should create a session according to the
+        data provided if the username isn't reserved and respond
+        with a 200(OK) code.
+        """
+        response = login_user(username='Corleone')
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_successful_login(self):
+        """
+        The view should return 200(Ok) in case of log in
+        to persistent user with right credentials.
+        """
+
+        create_persistent_user('Stracci', 'Brucia la luna')
+
+        response = login_user('Stracci', 'Brucia la luna')
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_reserved_username(self):
+        """
+        The view should return 403(Unauthorized) in case
+        username is reserved.
+        """
+        login_user(username='Corleone')
+
+        response = login_user(username='Corleone')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.reason_phrase, 'username_reserved')
+
+    def test_password_required(self):
+        """
+        The view should return 403(Unauthorized) in case
+        the user is persistent but there is no password
+        required during the session creation request.
+        """
+
+        create_persistent_user('Stracci', 'Brucia la luna')
+
+        response = login_user(username='Stracci')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.reason_phrase, 'password_required')
+
+    def test_wrong_password(self):
+        """
+        The view should return 403(Unauthorized) in case
+        of wrong credentials during the session create
+        request.
+        """
+
+        create_persistent_user('Stracci', 'Brucia la luna')
+
+        response = login_user('Stracci', 'Don Vito')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.reason_phrase, 'wrong_password')
+
+    def test_unecessary_password(self):
+        """
+        The view should return 422(Unprocessable Entity) in case
+        the already created user doesn't have password, but the
+        request contains a password.
+        """
+        response = login_user('Corleone', 'I <3 Godfather')
+
+        self.assertEqual(response.status_code, 422)
 
 class MessageViewPATCHTests(ChatTests):
     client_class = ChatClient
