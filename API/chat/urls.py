@@ -14,4 +14,14 @@ urlpatterns = [
         views.ChannelView.as_view(),
         name='channel'
     ),
+    url(
+        r'^sessions/',
+        csrf_exempt(views.SessionView.as_view()),
+        name='session'
+    ),
+    url(
+        r'^users/(?P<username>[a-zA-Z0-9_.-]+)/$',
+        csrf_exempt(views.UserView.as_view()),
+        name='user'
+    )
 ]

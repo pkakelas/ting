@@ -30,6 +30,26 @@ class MessageCreationForm(forms.Form):
 
         return message;
 
+class UserPatchForm(forms.Form):
+    password = forms.CharField(required=False)
+    email = forms.EmailField(required=False)
+
+    def save(self):
+        session = Session.objects.get(session_key=request.session.session_key)
+        uid = session.get_decoded().get('_auth_user_id')
+        user = User.objects.get(pk=uid)
+
+        for arg in ['email', 'password']:
+            if self.cleaned_data[arg].exists():
+                setattr(user, arg, self.cleaned_data[arg])
+
+        user.save()
+
+        return user
+
+class SessionPostForm(forms.Form):
+    username = forms.CharField(max_length=20)
+    password = forms.CharField(required=False)
 
 class MessagePatchForm(forms.Form):
     id = forms.IntegerField()

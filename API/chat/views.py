@@ -4,9 +4,12 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, QueryDict
 from django.views.generic import View
 from .utils import datetime_to_timestamp
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.sessions.models import Session
 
 from .models import Channel, Message
-from .forms import MessageCreationForm, MessagePatchForm
+from .forms import MessageCreationForm, MessagePatchForm, UserPatchForm, SessionPostForm
 
 
 class MessageView(View):
@@ -82,3 +85,71 @@ class ChannelView(View):
             json.dumps(channel),
             content_type='application/json'
         )
+
+class SessionView(View):
+    def post(self, request, *args, **kwargs):
+        form = SessionPostForm(request.POST)
+
+        if not form.is_valid():
+            return HttpResponseBadRequest(str(form.errors))
+
+        if User.objects.filter(username=request.POST['username']).exists():
+            user = User.objects.get(username=request.POST['username'])
+
+            if user.has_usable_password():
+                if request.POST.get('password') is None:
+                    return HttpResponse(
+                        status=403,
+                        reason='password_required'
+                    )
+
+                if check_password(request.POST['password']):
+                    return HttpResponse(status=200)
+
+                return HttpResponse(
+                    status=403,
+                    reason='wrong_password'
+                )
+
+            return HttpResponse(
+                status=403,
+                reason='username_reserved'
+            )
+
+        if request.POST.get('password'):
+            return HttpResponse(status=422)
+
+        request.session['username'] = request.POST['username']
+        user = User.objects.create_user(request.POST['username'])
+        user.save()
+
+        return HttpResponse(status=200, reason=request.session.session_key)
+
+    def delete(self, request, *args, **kwargs):
+        session = Session.objects.get(session_key=request.session.session_key)
+        uid = session.get_decoded().get('_auth_user_id')
+        user = User.objects.get(pk=uid)
+
+        user.delete()
+        request.session.flush()
+
+class UserView(View):
+    def patch(self, request, username, *args, **kwargs):
+        if request.session['username'] != username:
+            return HttpResponse(status=403)
+
+        form = UserPatchForm(request.POST)
+
+        if not form.is_valid():
+            return HttpResponseBadRequest(str(form.errors))
+
+        #user = form.save()
+        user = User.objects.get(username=username)
+
+        for arg in ['email', 'password']:
+            if request.POST[arg].exists():
+                setattr(user, arg, request.POST[arg])
+
+        form.save()
+
+        return HttpResponse(status=200)
