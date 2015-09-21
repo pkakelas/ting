@@ -135,7 +135,7 @@ class SessionView(View):
 
 class UserView(View):
     def patch(self, request, username, *args, **kwargs):
-        if request.session['username'] != username:
+        if request.session.get('username') != username:
             return HttpResponse(status=403)
 
         arguments = dict(request.POST)
