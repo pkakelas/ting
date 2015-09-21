@@ -444,7 +444,8 @@ class UserViewPATCHTests(ChatTests):
         respond with a 200(OK) status code.
         """
         login_user(username='Corleone')
-        response = self.patch_and_get_response(username=Corleone, password='<3 stracci')
+
+        response = self.patch_and_get_response(username='Corleone', password='<3 stracci')
         self.assertEqual(response.status_code, 200)
 
         response = login_user(username='Corleone')
@@ -461,7 +462,7 @@ class UserViewPATCHTests(ChatTests):
         respond with a 200(OK) status code.
         """
         response = login_user(username='Corleone')
-        self.patch_and_get_response(username=Corleone, email='corlfamiglia@godfather.com')
+        self.patch_and_get_response(username='Corleone', email='corlfamiglia@godfather.com')
         self.assertEqual(response.status_code, 200)
 
     def test_wrong_username(self):
@@ -469,7 +470,7 @@ class UserViewPATCHTests(ChatTests):
         The view should return 403(Unauthorized) in case
         the user isn't logged in.
         """
-        response = self.patch_and_get_response(username=Corleone, email='corlfamiglia@godfather.com')
+        response = self.patch_and_get_response(username='Corleone', email='corlfamiglia@godfather.com')
         self.assertEqual(response.status_code, 403)
 
 class SessionViewPATCHTests(ChatTests):
