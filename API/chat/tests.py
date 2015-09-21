@@ -425,22 +425,12 @@ class MessageViewGETTests(ChatTests):
         self.assertEqual(response.status_code, 404)
 
 class UserViewPATCHTests(ChatTests):
-    def patch_and_get_response(self, username, email=None, password=None, birthday=None, gender=None):
+    def patch_and_get_response(self, username, **kwargs):
         """
         Patches a message on chat:user and returns the response
         """
-        parameters={}
 
-        if email != None:
-            parameters['email']=email
-        if password != None:
-            parameters['password']=password
-#        if birthday != None:
-#            parameters['birthday']=birthday
-#        if gender != None:
-#            parameters['gender']=gender
-
-        qstring = urllib.urlencode(parameters);
+        qstring = urllib.urlencode(kwargs)
 
         return self.client.patch(
             reverse('chat:user', args=(username,)),
