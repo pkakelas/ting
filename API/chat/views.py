@@ -138,18 +138,15 @@ class UserView(View):
         if request.session['username'] != username:
             return HttpResponse(status=403)
 
-        form = UserPatchForm(request.POST)
+        arguments = dict(request.POST)
+        arguments.update({'username': username})
+
+        form = UserPatchForm(arguments)
 
         if not form.is_valid():
             return HttpResponseBadRequest(str(form.errors))
 
-        #user = form.save()
         user = User.objects.get(username=username)
-
-        for arg in ['email', 'password']:
-            if request.POST[arg].exists():
-                setattr(user, arg, request.POST[arg])
-
-        form.save()
+        user.update(**form.cleaned_data)
 
         return HttpResponse(status=200)
