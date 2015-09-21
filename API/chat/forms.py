@@ -30,6 +30,7 @@ class MessageCreationForm(forms.Form):
 
         return message;
 
+
 class UserPatchForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(required=False)
@@ -39,6 +40,7 @@ class UserPatchForm(forms.Form):
 class SessionPostForm(forms.Form):
     username = forms.CharField(max_length=20)
     password = forms.CharField(required=False)
+
 
 class MessagePatchForm(forms.Form):
     id = forms.IntegerField()

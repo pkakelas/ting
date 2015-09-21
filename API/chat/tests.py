@@ -15,10 +15,10 @@ def login_user(username, password=None):
     """
     Logs in a user
     """
-    parameters={'username': username}
+    parameters = {'username': username}
 
-    if password != None:
-        parameters['password']=password
+    if password is not None:
+        parameters['password'] = password
 
     return Client().post(
         reverse('chat:session'),
