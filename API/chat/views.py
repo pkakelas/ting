@@ -147,6 +147,7 @@ class UserView(View):
             return HttpResponseBadRequest(str(form.errors))
 
         user = User.objects.get(username=username)
-        user.update(**form.cleaned_data)
+        User.objects.filter(pk=user.pk).update(**form.cleaned_data)
+
 
         return HttpResponse(status=200)
